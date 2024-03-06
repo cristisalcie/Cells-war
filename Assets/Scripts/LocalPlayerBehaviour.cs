@@ -4,15 +4,14 @@ using UnityEngine;
 
 public class LocalPlayerBehaviour : MonoBehaviour
 {
-    private LocalPlayerPhysics localPlayerPhysics;
-    private Vector3 mouseWorldPosition;
+    private LocalCellsPhysicsManager localCellsPhysicsManager;
+    private Vector2 mouseWorldPosition;
 
     private void Awake()
     {
-        localPlayerPhysics = null;
+        localCellsPhysicsManager = null;
     }
 
-    // Start is called before the first frame update
     void Start()
     {
         for (int i = 0; i < gameObject.transform.childCount; i++)
@@ -20,13 +19,12 @@ public class LocalPlayerBehaviour : MonoBehaviour
             GameObject child = gameObject.transform.GetChild(i).gameObject;
             if (child.name == "Cells")
             {
-                localPlayerPhysics = child.GetComponent<LocalPlayerPhysics>();
+                localCellsPhysicsManager = child.GetComponent<LocalCellsPhysicsManager>();
                 break;
             }
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
         // Handle input
@@ -34,14 +32,12 @@ public class LocalPlayerBehaviour : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            // TODO: Divide Cells
-            Debug.Log("Divide cells");
-            localPlayerPhysics.DivideCells();
+            localCellsPhysicsManager.DivideCells(mouseWorldPosition);
         }
     }
 
     private void FixedUpdate()
     {
-        localPlayerPhysics.Move(mouseWorldPosition);
+        localCellsPhysicsManager.Move(mouseWorldPosition);
     }
 }

@@ -1172,7 +1172,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7371070773840906181, guid: 1c6dca9d555e7ad498e83f25b094c84e, type: 3}
       propertyPath: m_Name
-      value: Cell
+      value: LocalCell
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
