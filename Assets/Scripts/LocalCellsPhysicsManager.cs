@@ -6,7 +6,7 @@ using UnityEngine;
 public class LocalCellsPhysicsManager : MonoBehaviour
 {
     private List<LocalCellPhysics> cellsPhysics;
-    public GameObject cellPrefab;
+    public GameObject localCellPrefab;
 
     private void Awake()
     {
@@ -72,7 +72,7 @@ public class LocalCellsPhysicsManager : MonoBehaviour
             }
 
             // Delay addition of new cell into main cell list through a local list.
-            _childrenCells[i] = Instantiate(cellPrefab, _cellPhysics.transform.position, Quaternion.identity, transform);
+            _childrenCells[i] = Instantiate(localCellPrefab, _cellPhysics.transform.position, Quaternion.identity, transform);
 
             LocalCellPhysics _childCellPhysics = _childrenCells[i].GetComponent<LocalCellPhysics>();
 

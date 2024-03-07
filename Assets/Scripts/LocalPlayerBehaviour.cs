@@ -17,7 +17,7 @@ public class LocalPlayerBehaviour : MonoBehaviour
         for (int i = 0; i < gameObject.transform.childCount; i++)
         {
             GameObject child = gameObject.transform.GetChild(i).gameObject;
-            if (child.name == "Cells")
+            if (child.name == "Local Cells")
             {
                 localCellsPhysicsManager = child.GetComponent<LocalCellsPhysicsManager>();
                 break;

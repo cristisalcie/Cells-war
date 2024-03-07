@@ -6,6 +6,7 @@ TagManager:
   tags:
   - LocalCell
   - RemoteCell
+  - FoodCell
   layers:
   - Default
   - TransparentFX

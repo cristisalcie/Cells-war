@@ -9,7 +9,7 @@ public class LocalCellPhysics : MonoBehaviour
     public LocalCellPhysics parentCellPhysics;
     public bool stopUserInputMovement;
 
-    private const float moveSpeedMultiplier = 50.0f;
+    private const float moveSpeedMultiplier = 25.0f;
     private const float divisionForceMultiplier = 2000.0f;
     private const int mergeBackTimerExpireInSeconds = 8;
     private readonly Vector2 minScale = Vector2.one;
@@ -169,6 +169,13 @@ public class LocalCellPhysics : MonoBehaviour
     }
     private void OnTriggerExit2D(Collider2D _collision)
     {
+        // BUG-01: OnTriggerExit2D is called before OnTriggerStay2D finishes to merge back.
+        //
+        // Description:
+        // OnTriggerStay2D is triggered to merge however due external forces caused by merging of other 2 cells, it exits trigger
+        // before this cell is absorbed hence on trigger exit we should do something regarding this.
+
+
         // Launched new divided cell and once it exited its parent cell set collider
         if (IsLocalCellInCollision(_collision)
             && HasParentCellInCollision(_collision)
