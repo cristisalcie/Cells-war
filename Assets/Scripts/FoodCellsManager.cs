@@ -6,7 +6,7 @@ public class FoodCellsManager : MonoBehaviour
 {
     public GameObject foodCellPrefab;
 
-    private const int maxNumberOfFoodCells = 100;
+    private const int maxNumberOfFoodCells = 1000;
 
     private void Start()
     {

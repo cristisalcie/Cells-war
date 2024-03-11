@@ -7,6 +7,7 @@ public class LocalCellsPhysicsManager : MonoBehaviour
 {
     private List<LocalCellPhysics> cellsPhysics;
     public GameObject localCellPrefab;
+    private const float cameraZoomMultiplier = 0.75f;
 
     private void Awake()
     {
@@ -25,6 +26,7 @@ public class LocalCellsPhysicsManager : MonoBehaviour
     private void LateUpdate()
     {
         CameraFollow();
+        CameraZoom();
     }
 
     public void Move(Vector2 _toWorldPosition)
@@ -38,23 +40,48 @@ public class LocalCellsPhysicsManager : MonoBehaviour
 
     private void CameraFollow()
     {
-        // Camera follow set to the center of all cells
-        if (cellsPhysics.Count > 0)
-        {
-            Vector3 targetPosition = new Vector3(0, 0, 0);
+        if (cellsPhysics.Count <= 0) return;
 
+        // Camera follow = set to the center of all cells
+        Vector3 targetPosition = new Vector3(0, 0, 0);
+
+        foreach (LocalCellPhysics _cellPhysics in cellsPhysics)
+        {
+            targetPosition.x += _cellPhysics.transform.position.x;
+            targetPosition.y += _cellPhysics.transform.position.y;
+        }
+        targetPosition /= cellsPhysics.Count;
+
+        // oZ needs to be negative in order to be properly oriented towards the map
+        targetPosition.z = -1;
+
+        Camera.main.transform.position = targetPosition;
+    }
+
+    private void CameraZoom()
+    {
+        if (cellsPhysics.Count <= 0) return;
+
+        float _newOrthographicSize = 0;
+
+        if (cellsPhysics.Count == 1)
+        {
+            float _cellPerimeter = (float)(2 * Math.PI * cellsPhysics[0].transform.localScale.x / 2.0f);
+            _newOrthographicSize += _cellPerimeter * cameraZoomMultiplier;
+        }
+        else
+        {
             foreach (LocalCellPhysics _cellPhysics in cellsPhysics)
             {
-                targetPosition.x += _cellPhysics.transform.position.x;
-                targetPosition.y += _cellPhysics.transform.position.y;
+                float _cellPerimeter = (float)(2.0 * Math.PI * _cellPhysics.transform.localScale.x / 2.0f);
+                float _cellDistanceToCamera = Vector2.Distance(Camera.main.transform.position, _cellPhysics.transform.position);
+
+                _newOrthographicSize = Mathf.Max(_newOrthographicSize, _cellDistanceToCamera + _cellPerimeter * cameraZoomMultiplier);
             }
-            targetPosition /= cellsPhysics.Count;
-
-            // oZ needs to be negative in order to be properly oriented towards the map
-            targetPosition.z = -1;
-
-            Camera.main.transform.position = targetPosition;
         }
+
+        //Camera.main.orthographicSize = _newOrthographicSize;
+        Camera.main.orthographicSize = Mathf.Lerp(Camera.main.orthographicSize, _newOrthographicSize, Time.deltaTime);
     }
 
     public void DivideCells(Vector2 _toWorldPosition)
