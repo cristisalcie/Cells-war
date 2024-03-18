@@ -169,21 +169,30 @@ public class LocalCellPhysics : MonoBehaviour
     }
     private void OnTriggerExit2D(Collider2D _collision)
     {
-        // BUG-01: OnTriggerExit2D is called before OnTriggerStay2D finishes to merge back.
-        //
-        // Description:
-        // OnTriggerStay2D is triggered to merge however due external forces caused by merging of other 2 cells, it exits trigger
-        // before this cell is absorbed hence on trigger exit we should do something regarding this.
-
-
         // Launched new divided cell and once it exited its parent cell set collider
         if (IsLocalCellInCollision(_collision)
             && HasParentCellInCollision(_collision)
-            && IsThisChildParentInCollision(_collision)
-            && !CanMergeBack()/* Is enough to be detected only at the start of division */)
+            && IsThisChildParentInCollision(_collision))
         {
-            // Note: Rigidbody automatic mass will calculate mass to 1 while trigger is true
-            GetComponent<CircleCollider2D>().isTrigger = false;
+            if (CanMergeBack())
+            {
+                // Because of external forces caused by merging of other 2 cells, this function is called before merging was completed
+
+                // Resume user input for both child and parent
+                stopUserInputMovement = false;
+                parentCellPhysics.stopUserInputMovement = false;
+
+                // Enable back rigidbody automatic mass.
+                rb.useAutoMass = true;
+
+                // Disable trigger for child in order to allow collisions
+                GetComponent<CircleCollider2D>().isTrigger = false;
+            }
+            else /* Is enough to be detected only at the start of division */
+            {
+                // Note: Rigidbody automatic mass will calculate mass to 1 while trigger is true
+                GetComponent<CircleCollider2D>().isTrigger = false;
+            }
         }
     }
 
