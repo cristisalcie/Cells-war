@@ -7,7 +7,10 @@ public class LocalCellsPhysicsManager : MonoBehaviour
 {
     private List<LocalCellPhysics> cellsPhysics;
     public GameObject localCellPrefab;
-    private const float cameraZoomMultiplier = 0.75f;
+    private const float cameraZoomMultiplier = 0.65f;
+    private const float minSizeMultiplier = 0.5f;
+    private const float stepSizeMultiplier = 10; // how quick can we reach the minSizeMultiplier
+    private readonly Vector2 minScale = Vector2.one;
 
     private void Awake()
     {
@@ -66,22 +69,30 @@ public class LocalCellsPhysicsManager : MonoBehaviour
 
         if (cellsPhysics.Count == 1)
         {
+            float _sizeMultiplier = Mathf.Max(minSizeMultiplier, minScale.x - (cellsPhysics[0].transform.localScale.x - minScale.x) / stepSizeMultiplier);
             float _cellPerimeter = (float)(2 * Math.PI * cellsPhysics[0].transform.localScale.x / 2.0f);
-            _newOrthographicSize += _cellPerimeter * cameraZoomMultiplier;
+            _newOrthographicSize = _cellPerimeter * cameraZoomMultiplier * _sizeMultiplier;
         }
         else
         {
             foreach (LocalCellPhysics _cellPhysics in cellsPhysics)
             {
-                float _cellPerimeter = (float)(2.0 * Math.PI * _cellPhysics.transform.localScale.x / 2.0f);
+                float _cellRadius = _cellPhysics.transform.localScale.x / 2.0f;
+                float _cellPerimeter = (float)(2.0 * Math.PI * _cellRadius);
                 float _cellDistanceToCamera = Vector2.Distance(Camera.main.transform.position, _cellPhysics.transform.position);
+                float _borderOfCellDistanceToCamera = Mathf.Max(0, _cellDistanceToCamera - _cellRadius);
 
-                _newOrthographicSize = Mathf.Max(_newOrthographicSize, _cellDistanceToCamera + _cellPerimeter * cameraZoomMultiplier);
+                // Choose the maximum zoom based on radius of cell plus distance from border of cell to camera
+                _newOrthographicSize = Mathf.Max(_newOrthographicSize, _borderOfCellDistanceToCamera + _cellPerimeter * cameraZoomMultiplier);
             }
         }
 
-        //Camera.main.orthographicSize = _newOrthographicSize;
         Camera.main.orthographicSize = Mathf.Lerp(Camera.main.orthographicSize, _newOrthographicSize, Time.deltaTime);
+    }
+
+    private bool CanDivideCell(Vector3 _newScale)
+    {
+        return _newScale.x >= minScale.x && _newScale.y >= minScale.y;
     }
 
     public void DivideCells(Vector2 _toWorldPosition)
@@ -93,7 +104,7 @@ public class LocalCellsPhysicsManager : MonoBehaviour
         {
             Vector3 _newScale = _cellPhysics.transform.localScale / 2;
 
-            if (!_cellPhysics.CanDivide(_newScale))
+            if (!CanDivideCell(_newScale))
             {
                 continue;
             }

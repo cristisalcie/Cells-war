@@ -12,7 +12,6 @@ public class LocalCellPhysics : MonoBehaviour
     private const float moveSpeedMultiplier = 25.0f;
     private const float divisionForceMultiplier = 2000.0f;
     private const int mergeBackTimerExpireInSeconds = 8;
-    private readonly Vector2 minScale = Vector2.one;
 
     private Rigidbody2D rb;
     private int childCellsNumber;
@@ -98,11 +97,6 @@ public class LocalCellPhysics : MonoBehaviour
         --childCellsNumber;
     }
     
-    public bool CanDivide(Vector3 _newScale)
-    {
-        return _newScale.x >= minScale.x && _newScale.y >= minScale.y;
-    }
-
     private bool HasParentCellInCollision(Collider2D _collision)
     {
         return parentCellPhysics != null;
