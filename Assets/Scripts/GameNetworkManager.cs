@@ -42,6 +42,7 @@ public class GameNetworkManager : NetworkManager
     public event Action OnStartClientAction;
     public event Action OnStopClientAction;
 
+    public String localPlayerName;
     private Transform mapBordersTransform;
 
     // Overrides the base singleton so we don't have to cast to this type everywhere.
@@ -60,8 +61,6 @@ public class GameNetworkManager : NetworkManager
         // Use -= to remove handlers
         // Set the action to null to remove all handlers
         OnStartAction += OnStartedActionHandler;
-
-        FindMapBordersTransform();
     }
 
     /// <summary>
@@ -378,6 +377,8 @@ public class GameNetworkManager : NetworkManager
 
     public override Transform GetStartPosition()
     {
+        FindMapBordersTransform();
+
         // First remove any dead transforms
         startPositions.RemoveAll(t => t == null);
 

@@ -1,8 +1,9 @@
+using Mirror;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerBehaviour : MonoBehaviour
+public class PlayerBehaviour : NetworkBehaviour
 {
     private CellsPhysicsManager cellsPhysicsManager;
     private Vector2 mouseWorldPosition;
