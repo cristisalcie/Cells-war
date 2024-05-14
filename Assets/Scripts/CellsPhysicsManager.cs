@@ -3,10 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class LocalCellsPhysicsManager : MonoBehaviour
+public class CellsPhysicsManager : MonoBehaviour
 {
-    private List<LocalCellPhysics> cellsPhysics;
-    public GameObject localCellPrefab;
+    private List<CellPhysics> cellsPhysics;
+    public GameObject cellPrefab;
     private const float cameraZoomMultiplier = 0.65f;
     private const float minSizeMultiplier = 0.5f;
     private const float stepSizeMultiplier = 10; // how quick can we reach the minSizeMultiplier
@@ -14,7 +14,7 @@ public class LocalCellsPhysicsManager : MonoBehaviour
 
     private void Awake()
     {
-        cellsPhysics = new List<LocalCellPhysics>();
+        cellsPhysics = new List<CellPhysics>();
     }
 
     private void Start()
@@ -22,7 +22,7 @@ public class LocalCellsPhysicsManager : MonoBehaviour
         for (int i = 0; i < gameObject.transform.childCount; i++)
         {
             GameObject _child = gameObject.transform.GetChild(i).gameObject;
-            cellsPhysics.Add(_child.GetComponent<LocalCellPhysics>());
+            cellsPhysics.Add(_child.GetComponent<CellPhysics>());
         }
     }
 
@@ -34,7 +34,7 @@ public class LocalCellsPhysicsManager : MonoBehaviour
 
     public void Move(Vector2 _toWorldPosition)
     {
-        foreach (LocalCellPhysics _cellPhysics in cellsPhysics)
+        foreach (CellPhysics _cellPhysics in cellsPhysics)
         {
             if (_cellPhysics.stopUserInputMovement) continue;
             _cellPhysics.Move(_toWorldPosition);
@@ -48,7 +48,7 @@ public class LocalCellsPhysicsManager : MonoBehaviour
         // Camera follow = set to the center of all cells
         Vector3 targetPosition = new Vector3(0, 0, 0);
 
-        foreach (LocalCellPhysics _cellPhysics in cellsPhysics)
+        foreach (CellPhysics _cellPhysics in cellsPhysics)
         {
             targetPosition.x += _cellPhysics.transform.position.x;
             targetPosition.y += _cellPhysics.transform.position.y;
@@ -75,7 +75,7 @@ public class LocalCellsPhysicsManager : MonoBehaviour
         }
         else
         {
-            foreach (LocalCellPhysics _cellPhysics in cellsPhysics)
+            foreach (CellPhysics _cellPhysics in cellsPhysics)
             {
                 float _cellRadius = _cellPhysics.transform.localScale.x / 2.0f;
                 float _cellPerimeter = (float)(2.0 * Math.PI * _cellRadius);
@@ -100,7 +100,7 @@ public class LocalCellsPhysicsManager : MonoBehaviour
         GameObject[] _childrenCells = new GameObject[cellsPhysics.Count];
         int i = 0;
 
-        foreach (LocalCellPhysics _cellPhysics in cellsPhysics)
+        foreach (CellPhysics _cellPhysics in cellsPhysics)
         {
             Vector3 _newScale = _cellPhysics.transform.localScale / 2;
 
@@ -110,9 +110,9 @@ public class LocalCellsPhysicsManager : MonoBehaviour
             }
 
             // Delay addition of new cell into main cell list through a local list.
-            _childrenCells[i] = Instantiate(localCellPrefab, _cellPhysics.transform.position, Quaternion.identity, transform);
+            _childrenCells[i] = Instantiate(cellPrefab, _cellPhysics.transform.position, Quaternion.identity, transform);
 
-            LocalCellPhysics _childCellPhysics = _childrenCells[i].GetComponent<LocalCellPhysics>();
+            CellPhysics _childCellPhysics = _childrenCells[i].GetComponent<CellPhysics>();
 
             _cellPhysics.IncrementChildCellsNumber();
 
@@ -120,7 +120,7 @@ public class LocalCellsPhysicsManager : MonoBehaviour
             _childCellPhysics.transform.localScale = _newScale;
 
             _childCellPhysics.parentCellPhysics = _cellPhysics;
-            _childCellPhysics.SetLocalPlayerPhysics(this);
+            _childCellPhysics.SetPlayerPhysics(this);
             _childCellPhysics.GetComponent<CircleCollider2D>().isTrigger = true;
             ++i;
         }
@@ -132,7 +132,7 @@ public class LocalCellsPhysicsManager : MonoBehaviour
                 break;
             }
 
-            LocalCellPhysics _childCellPhysics = _childrenCells[i].GetComponent<LocalCellPhysics>();
+            CellPhysics _childCellPhysics = _childrenCells[i].GetComponent<CellPhysics>();
 
             // Add to cellsPhysics list in order to achieve normal cell behaviour.
             cellsPhysics.Add(_childCellPhysics);
@@ -143,9 +143,9 @@ public class LocalCellsPhysicsManager : MonoBehaviour
         }
     }
 
-    public void MergeBackCell(LocalCellPhysics _cellPhysics)
+    public void MergeBackCell(CellPhysics _cellPhysics)
     {
-        LocalCellPhysics _parentCell = _cellPhysics.parentCellPhysics;
+        CellPhysics _parentCell = _cellPhysics.parentCellPhysics;
 
         // Calculate new scale for parent cell
         Vector3 _newLocalScale = new Vector3(_cellPhysics.transform.localScale.x, _cellPhysics.transform.localScale.y, _cellPhysics.transform.localScale.z);

@@ -32,9 +32,9 @@ public class FoodCellBehaviour : MonoBehaviour
             < Mathf.Max(transform.localScale.x / 2, _otherCell.transform.localScale.x / 2);
     }
 
-    private bool IsLocalCellInCollision(Collider2D _collision)
+    private bool IsCellInCollision(Collider2D _collision)
     {
-        return _collision.CompareTag("LocalCell");
+        return _collision.CompareTag("Cell");
     }
 
     private IEnumerator WaitToRespawn()
@@ -61,12 +61,12 @@ public class FoodCellBehaviour : MonoBehaviour
 
     private void CalculatePosition()
     {
-        float _newPositionX = Random.Range
+        float _newPositionX = UnityEngine.Random.Range
             (
                 -mapBordersTransform.localScale.x / 2 + transform.localScale.x / 2,
                 mapBordersTransform.localScale.x / 2 - transform.localScale.x / 2
             );
-        float _newPositionY = Random.Range
+        float _newPositionY = UnityEngine.Random.Range
             (
                 -mapBordersTransform.localScale.y / 2 + transform.localScale.y / 2,
                 mapBordersTransform.localScale.y / 2 - transform.localScale.y / 2
@@ -77,7 +77,7 @@ public class FoodCellBehaviour : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D _collision)
     {
-        if (IsLocalCellInCollision(_collision)
+        if (IsCellInCollision(_collision)
             && IsFoodCellAbsorbedByCellTransform(_collision.transform))
         {
             // Calculate new scale for the eater cell

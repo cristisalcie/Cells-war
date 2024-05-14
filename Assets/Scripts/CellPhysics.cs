@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class LocalCellPhysics : MonoBehaviour
+public class CellPhysics : MonoBehaviour
 {
     [HideInInspector]
-    public LocalCellPhysics parentCellPhysics;
+    public CellPhysics parentCellPhysics;
     public bool stopUserInputMovement;
 
     private const float moveSpeedMultiplier = 25.0f;
@@ -15,14 +15,14 @@ public class LocalCellPhysics : MonoBehaviour
 
     private Rigidbody2D rb;
     private int childCellsNumber;
-    private LocalCellsPhysicsManager localCellsPhysicsManager;
+    private CellsPhysicsManager cellsPhysicsManager;
     private bool mergeBackTimerExpired;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         parentCellPhysics = null;
-        localCellsPhysicsManager = null;
+        cellsPhysicsManager = null;
         mergeBackTimerExpired = false;
         childCellsNumber = 0;
         stopUserInputMovement = false;
@@ -77,9 +77,9 @@ public class LocalCellPhysics : MonoBehaviour
         mergeBackTimerExpired = true;
     }
 
-    public void SetLocalPlayerPhysics(LocalCellsPhysicsManager _localCellsPhysicsManager)
+    public void SetPlayerPhysics(CellsPhysicsManager _cellsPhysicsManager)
     {
-        localCellsPhysicsManager = _localCellsPhysicsManager;
+        cellsPhysicsManager = _cellsPhysicsManager;
     }
 
     public void IncrementChildCellsNumber()
@@ -102,9 +102,9 @@ public class LocalCellPhysics : MonoBehaviour
         return parentCellPhysics != null;
     }
 
-    private bool IsLocalCellInCollision(Collider2D _collision)
+    private bool IsCellInCollision(Collider2D _collision)
     {
-        return _collision.CompareTag("LocalCell");
+        return _collision.CompareTag("Cell");
     }
 
     private bool IsThisChildParentInCollision(Collider2D _collision)
@@ -121,7 +121,7 @@ public class LocalCellPhysics : MonoBehaviour
     private void OnCollisionStay2D(Collision2D _collision)
     {
         // Solves the case in which the cells are next to each other already and OnCollisionEnter2D() is not triggering
-        if (IsLocalCellInCollision(_collision.collider)
+        if (IsCellInCollision(_collision.collider)
             && HasParentCellInCollision(_collision.collider)
             && IsThisChildParentInCollision(_collision.collider)
             && CanMergeBack())
@@ -145,7 +145,7 @@ public class LocalCellPhysics : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D _collision)
     {
-        if (IsLocalCellInCollision(_collision)
+        if (IsCellInCollision(_collision)
             && HasParentCellInCollision(_collision)
             && IsThisChildParentInCollision(_collision)
             && CanMergeBack())
@@ -157,14 +157,14 @@ public class LocalCellPhysics : MonoBehaviour
             if (IsCurrentCellAbsorbedByCellTransform(parentCellPhysics.transform))
             {
                 // This cell is asimilated back by the cell it divided from.
-                localCellsPhysicsManager.MergeBackCell(this);
+                cellsPhysicsManager.MergeBackCell(this);
             }
         }
     }
     private void OnTriggerExit2D(Collider2D _collision)
     {
         // Launched new divided cell and once it exited its parent cell set collider
-        if (IsLocalCellInCollision(_collision)
+        if (IsCellInCollision(_collision)
             && HasParentCellInCollision(_collision)
             && IsThisChildParentInCollision(_collision))
         {

@@ -2,14 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class LocalPlayerBehaviour : MonoBehaviour
+public class PlayerBehaviour : MonoBehaviour
 {
-    private LocalCellsPhysicsManager localCellsPhysicsManager;
+    private CellsPhysicsManager cellsPhysicsManager;
     private Vector2 mouseWorldPosition;
 
     private void Awake()
     {
-        localCellsPhysicsManager = null;
+        cellsPhysicsManager = null;
     }
 
     void Start()
@@ -17,9 +17,9 @@ public class LocalPlayerBehaviour : MonoBehaviour
         for (int i = 0; i < gameObject.transform.childCount; i++)
         {
             GameObject child = gameObject.transform.GetChild(i).gameObject;
-            if (child.name == "Local Cells")
+            if (child.name == "Cells")
             {
-                localCellsPhysicsManager = child.GetComponent<LocalCellsPhysicsManager>();
+                cellsPhysicsManager = child.GetComponent<CellsPhysicsManager>();
                 break;
             }
         }
@@ -32,12 +32,12 @@ public class LocalPlayerBehaviour : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            localCellsPhysicsManager.DivideCells(mouseWorldPosition);
+            cellsPhysicsManager.DivideCells(mouseWorldPosition);
         }
     }
 
     private void FixedUpdate()
     {
-        localCellsPhysicsManager.Move(mouseWorldPosition);
+        cellsPhysicsManager.Move(mouseWorldPosition);
     }
 }
