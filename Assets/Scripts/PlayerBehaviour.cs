@@ -59,10 +59,6 @@ public class PlayerBehaviour : NetworkBehaviour
     {
         base.OnStartLocalPlayer();
 
-        // Lock cursor on window blocked in the center.
-        //Cursor.lockState = CursorLockMode.Locked;
-        //Cursor.visible = false;
-
         string _name = "Player" + netIdentity.netId;
         if (string.IsNullOrEmpty(GameNetworkManager.singleton.localPlayerName))  // Name was not set by client in Lobby scene
         {

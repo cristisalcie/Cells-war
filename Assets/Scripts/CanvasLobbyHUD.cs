@@ -91,9 +91,8 @@ public class CanvasLobbyHUD : MonoBehaviour
                 PanelStart.SetActive(false);
                 clientText.text = "Connecting to " + GameNetworkManager.singleton.networkAddress + "..";
 
-                // Lock cursor and set it to be invisible
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
+                // Set cursor to be invisible (Future feature)
+                //Cursor.visible = false;
 
                 // Start timeout timer
                 StartCoroutine(CheckConnectionState());
