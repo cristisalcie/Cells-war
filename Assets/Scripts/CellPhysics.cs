@@ -1,5 +1,7 @@
+using Mirror;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -18,8 +20,12 @@ public class CellPhysics : MonoBehaviour
     private CellsPhysicsManager cellsPhysicsManager;
     private bool mergeBackTimerExpired;
 
+    private TextMeshProUGUI playerNameTextMeshPro;
+
     private void Awake()
     {
+        // Only the first component found will be returned
+        playerNameTextMeshPro = GetComponentInChildren<TextMeshProUGUI>();
         rb = GetComponent<Rigidbody2D>();
         parentCellPhysics = null;
         cellsPhysicsManager = null;
@@ -80,6 +86,11 @@ public class CellPhysics : MonoBehaviour
     public void SetPlayerPhysics(CellsPhysicsManager _cellsPhysicsManager)
     {
         cellsPhysicsManager = _cellsPhysicsManager;
+    }
+
+    public void SetCellName(string _cellName)
+    {
+        playerNameTextMeshPro.text = _cellName;
     }
 
     public void IncrementChildCellsNumber()

@@ -1,3 +1,4 @@
+using Mirror;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,10 +16,7 @@ public class CellsPhysicsManager : MonoBehaviour
     private void Awake()
     {
         cellsPhysics = new List<CellPhysics>();
-    }
 
-    private void Start()
-    {
         for (int i = 0; i < gameObject.transform.childCount; i++)
         {
             GameObject _child = gameObject.transform.GetChild(i).gameObject;
@@ -165,5 +163,13 @@ public class CellsPhysicsManager : MonoBehaviour
 
         // Allow movement for parent again
         _parentCell.stopUserInputMovement = false;
+    }
+
+    public void SetCellsName(string name)
+    {
+        foreach (CellPhysics _cellPhysics in cellsPhysics)
+        {
+            _cellPhysics.SetCellName(name);
+        }
     }
 }
