@@ -10,6 +10,7 @@ public class CanvasLobbyHUD : MonoBehaviour
     public Button buttonHost;
     public Button buttonServer;
     public Button buttonClient;
+    public Button buttonExit;
 
     [Header("Panels")]
     public GameObject PanelStart;
@@ -35,6 +36,7 @@ public class CanvasLobbyHUD : MonoBehaviour
         buttonHost.onClick.AddListener(ButtonHost);
         buttonServer.onClick.AddListener(ButtonServer);
         buttonClient.onClick.AddListener(ButtonClient);
+        buttonExit.onClick.AddListener(ButtonExit);
 
         // This updates the Unity canvas, we have to manually call it every change, unlike legacy OnGUI.
         SetupCanvas();
@@ -69,6 +71,11 @@ public class CanvasLobbyHUD : MonoBehaviour
         GameNetworkManager.singleton.StartClient();
         SetupCanvas();
     }
+    public void ButtonExit()
+    {
+        Application.Quit();
+    }
+
     private IEnumerator CheckConnectionState()
     {
         // Since this coroutine is attached to CanvasLobbyHUD, when scene changes this script's game object
