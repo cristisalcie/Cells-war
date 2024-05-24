@@ -28,6 +28,8 @@ public class PlayerBehaviour : NetworkBehaviour
 
     void Update()
     {
+        if (!isLocalPlayer) return;
+
         // Handle input
         mouseWorldPosition = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
@@ -39,12 +41,18 @@ public class PlayerBehaviour : NetworkBehaviour
 
     private void FixedUpdate()
     {
+        if (!isLocalPlayer) return;
+
         cellsPhysicsManager.Move(mouseWorldPosition);
     }
 
+    private void LateUpdate()
+    {
+        if (!isLocalPlayer) return;
 
-
-
+        cellsPhysicsManager.CameraFollow();
+        cellsPhysicsManager.CameraZoom();
+    }
 
     #region Hook functions
 

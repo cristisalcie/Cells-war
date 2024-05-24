@@ -24,12 +24,6 @@ public class CellsPhysicsManager : MonoBehaviour
         }
     }
 
-    private void LateUpdate()
-    {
-        CameraFollow();
-        CameraZoom();
-    }
-
     public void Move(Vector2 _toWorldPosition)
     {
         foreach (CellPhysics _cellPhysics in cellsPhysics)
@@ -39,7 +33,7 @@ public class CellsPhysicsManager : MonoBehaviour
         }
     }
 
-    private void CameraFollow()
+    public void CameraFollow()
     {
         if (cellsPhysics.Count <= 0) return;
 
@@ -59,7 +53,7 @@ public class CellsPhysicsManager : MonoBehaviour
         Camera.main.transform.position = targetPosition;
     }
 
-    private void CameraZoom()
+    public void CameraZoom()
     {
         if (cellsPhysics.Count <= 0) return;
 
@@ -120,6 +114,7 @@ public class CellsPhysicsManager : MonoBehaviour
             _childCellPhysics.parentCellPhysics = _cellPhysics;
             _childCellPhysics.SetPlayerPhysics(this);
             _childCellPhysics.GetComponent<CircleCollider2D>().isTrigger = true;
+            _childCellPhysics.SetCellName(_cellPhysics.GetCellName());
             ++i;
         }
 

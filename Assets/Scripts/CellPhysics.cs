@@ -88,6 +88,11 @@ public class CellPhysics : MonoBehaviour
         cellsPhysicsManager = _cellsPhysicsManager;
     }
 
+    public string GetCellName()
+    {
+        return playerNameTextMeshPro.text;
+    }
+
     public void SetCellName(string _cellName)
     {
         playerNameTextMeshPro.text = _cellName;
