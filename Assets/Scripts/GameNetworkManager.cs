@@ -42,8 +42,12 @@ public class GameNetworkManager : NetworkManager
     public event Action OnStartClientAction;
     public event Action OnStopClientAction;
 
-    public String localPlayerName;
+    public string localPlayerName;
     private Transform mapBordersTransform;
+
+    public GameObject foodCellPrefab;
+    //private const int maxNumberOfFoodCells = 1000;
+    private const int maxNumberOfFoodCells = 1;
 
     // Overrides the base singleton so we don't have to cast to this type everywhere.
     public static new GameNetworkManager singleton => (GameNetworkManager)NetworkManager.singleton;
@@ -160,6 +164,11 @@ public class GameNetworkManager : NetworkManager
     public override void OnServerSceneChanged(string sceneName)
     {
         OnServerSceneChangedAction?.Invoke(sceneName);
+
+        if (sceneName == "Assets/Scenes/GameScene.unity")
+        {
+            SpawnFoodCells();
+        }
     }
 
     /// <summary>
@@ -369,6 +378,17 @@ public class GameNetworkManager : NetworkManager
     private void FindMapBordersTransform()
     {
         mapBordersTransform = GameObject.Find("Map Borders").transform;
+    }
+
+    private void SpawnFoodCells()
+    {
+        for (int i = 0; i < maxNumberOfFoodCells; i++)
+        {
+            GameObject _obj = Instantiate(foodCellPrefab, Vector3.zero, Quaternion.identity);
+
+            // Spawn the object on the server so it gets synchronized across clients
+            NetworkServer.Spawn(_obj);
+        }
     }
 
     #endregion
