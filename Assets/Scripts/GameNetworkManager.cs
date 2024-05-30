@@ -380,14 +380,21 @@ public class GameNetworkManager : NetworkManager
         mapBordersTransform = GameObject.Find("Map Borders").transform;
     }
 
+    [Server]
     private void SpawnFoodCells()
     {
         for (int i = 0; i < maxNumberOfFoodCells; i++)
         {
             GameObject _obj = Instantiate(foodCellPrefab, Vector3.zero, Quaternion.identity);
+            FoodCellBehaviour _foodCellBehaviour = _obj.GetComponent<FoodCellBehaviour>();
 
             // Spawn the object on the server so it gets synchronized across clients
             NetworkServer.Spawn(_obj);
+
+            _foodCellBehaviour.FindMapBordersTransform();
+            // Set random position on map
+            _foodCellBehaviour.CalculatePosition();
+            // Food cell is initially by default visible
         }
     }
 

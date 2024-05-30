@@ -4,10 +4,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CellsPhysicsManager : MonoBehaviour
+public class CellsPhysicsManager : NetworkBehaviour
 {
-    private List<CellPhysics> cellsPhysics;
-    public GameObject cellPrefab;
+    // This is max number of divided cells including the starting cell
+    private const int maxActiveCellsNumber = 10;
+
+    private readonly CellPhysics[] cellsPhysics = new CellPhysics[maxActiveCellsNumber]; 
     private const float cameraZoomMultiplier = 0.65f;
     private const float minSizeMultiplier = 0.5f;
     private const float stepSizeMultiplier = 10; // how quick can we reach the minSizeMultiplier
@@ -15,37 +17,61 @@ public class CellsPhysicsManager : MonoBehaviour
 
     private void Awake()
     {
-        cellsPhysics = new List<CellPhysics>();
+        if (gameObject.transform.childCount != maxActiveCellsNumber)
+        {
+            Debug.Log("Error: There are only " + gameObject.transform.childCount + " child game object cells and there should be " + maxActiveCellsNumber);
+        }
 
-        for (int i = 0; i < gameObject.transform.childCount; i++)
+        for (int i = 0; i < maxActiveCellsNumber; i++)
         {
             GameObject _child = gameObject.transform.GetChild(i).gameObject;
-            cellsPhysics.Add(_child.GetComponent<CellPhysics>());
+
+            cellsPhysics[i] = _child.GetComponent<CellPhysics>();
         }
     }
 
+    protected override void OnValidate()
+    {
+        base.OnValidate();
+
+        if (gameObject.transform.childCount != maxActiveCellsNumber)
+        {
+            Debug.Log("Error: There are only " + gameObject.transform.childCount + " child game object cells and there should be " + maxActiveCellsNumber);
+        }
+    }
+
+
+
+    #region Functions called only on CLIENT instance
+
+    [Client]
     public void Move(Vector2 _toWorldPosition)
     {
-        foreach (CellPhysics _cellPhysics in cellsPhysics)
+        for (int i = 0; i < maxActiveCellsNumber; i++)
         {
-            if (_cellPhysics.stopUserInputMovement) continue;
-            _cellPhysics.Move(_toWorldPosition);
+            if (!cellsPhysics[i].IsSpriteEnabled()) continue;
+            if (cellsPhysics[i].stopUserInputMovement) continue;
+            cellsPhysics[i].Move(_toWorldPosition);
         }
     }
 
+    [Client]
     public void CameraFollow()
     {
-        if (cellsPhysics.Count <= 0) return;
-
-        // Camera follow = set to the center of all cells
+        // Camera follow is set to the center of all active cells
         Vector3 targetPosition = new Vector3(0, 0, 0);
+        int _activeCells = 0;
 
-        foreach (CellPhysics _cellPhysics in cellsPhysics)
+        for (int i = 0; i < maxActiveCellsNumber; i++)
         {
-            targetPosition.x += _cellPhysics.transform.position.x;
-            targetPosition.y += _cellPhysics.transform.position.y;
+            if (!cellsPhysics[i].IsSpriteEnabled()) continue;
+
+            targetPosition.x += cellsPhysics[i].transform.position.x;
+            targetPosition.y += cellsPhysics[i].transform.position.y;
+
+            ++_activeCells;
         }
-        targetPosition /= cellsPhysics.Count;
+        targetPosition /= _activeCells;
 
         // oZ needs to be negative in order to be properly oriented towards the map
         targetPosition.z = -1;
@@ -53,13 +79,22 @@ public class CellsPhysicsManager : MonoBehaviour
         Camera.main.transform.position = targetPosition;
     }
 
+    [Client]
     public void CameraZoom()
     {
-        if (cellsPhysics.Count <= 0) return;
-
         float _newOrthographicSize = 0;
+        int _numCellsActive = 0;
 
-        if (cellsPhysics.Count == 1)
+        for (int i = 0; i < maxActiveCellsNumber;  ++i)
+        {
+            if (!cellsPhysics[i].IsSpriteEnabled()) continue;
+            {
+                ++_numCellsActive;
+                if (_numCellsActive >= 2) break;
+            }
+        }
+
+        if (_numCellsActive < 2)
         {
             float _sizeMultiplier = Mathf.Max(minSizeMultiplier, minScale.x - (cellsPhysics[0].transform.localScale.x - minScale.x) / stepSizeMultiplier);
             float _cellPerimeter = (float)(2 * Math.PI * cellsPhysics[0].transform.localScale.x / 2.0f);
@@ -67,11 +102,13 @@ public class CellsPhysicsManager : MonoBehaviour
         }
         else
         {
-            foreach (CellPhysics _cellPhysics in cellsPhysics)
+            for (int i = 0; i < maxActiveCellsNumber; ++i)
             {
-                float _cellRadius = _cellPhysics.transform.localScale.x / 2.0f;
+                if (!cellsPhysics[i].IsSpriteEnabled()) continue;
+
+                float _cellRadius = cellsPhysics[i].transform.localScale.x / 2.0f;
                 float _cellPerimeter = (float)(2.0 * Math.PI * _cellRadius);
-                float _cellDistanceToCamera = Vector2.Distance(Camera.main.transform.position, _cellPhysics.transform.position);
+                float _cellDistanceToCamera = Vector2.Distance(Camera.main.transform.position, cellsPhysics[i].transform.position);
                 float _borderOfCellDistanceToCamera = Mathf.Max(0, _cellDistanceToCamera - _cellRadius);
 
                 // Choose the maximum zoom based on radius of cell plus distance from border of cell to camera
@@ -82,60 +119,52 @@ public class CellsPhysicsManager : MonoBehaviour
         Camera.main.orthographicSize = Mathf.Lerp(Camera.main.orthographicSize, _newOrthographicSize, Time.deltaTime);
     }
 
-    private bool CanDivideCell(Vector3 _newScale)
+    [Client]
+    private bool CanDivideCellToScale(Vector3 _newScale)
     {
         return _newScale.x >= minScale.x && _newScale.y >= minScale.y;
     }
 
+    [Client]
     public void DivideCells(Vector2 _toWorldPosition)
     {
-        GameObject[] _childrenCells = new GameObject[cellsPhysics.Count];
-        int i = 0;
-
-        foreach (CellPhysics _cellPhysics in cellsPhysics)
+        for (int _parentCellIdx = 0; _parentCellIdx < maxActiveCellsNumber; _parentCellIdx++)
         {
-            Vector3 _newScale = _cellPhysics.transform.localScale / 2;
+            if (!cellsPhysics[_parentCellIdx].IsSpriteEnabled()) continue;
+            if (!cellsPhysics[_parentCellIdx].canGetDividedFromInputPerspective) continue;
 
-            if (!CanDivideCell(_newScale))
-            {
-                continue;
+            Vector3 _newScale = cellsPhysics[_parentCellIdx].transform.localScale / 2;
+
+            if (!CanDivideCellToScale(_newScale)) continue;
+
+            // Note: This could be optimized in the future
+            for (int _childCellIdx = 0; _childCellIdx < maxActiveCellsNumber; _childCellIdx++)
+            {   // Find an inactive cell
+                if (cellsPhysics[_childCellIdx].IsSpriteEnabled()) continue;
+                {
+                    cellsPhysics[_parentCellIdx].canGetDividedFromInputPerspective = false;
+                    cellsPhysics[_parentCellIdx].IncrementChildCellsNumber();
+                    cellsPhysics[_parentCellIdx].transform.localScale = _newScale;
+
+                    cellsPhysics[_childCellIdx].canGetDividedFromInputPerspective = false;
+                    cellsPhysics[_childCellIdx].transform.localScale = _newScale;
+                    cellsPhysics[_childCellIdx].transform.position = cellsPhysics[_parentCellIdx].transform.position;
+                    cellsPhysics[_childCellIdx].parentCellPhysics = cellsPhysics[_parentCellIdx];
+                    CmdSetActiveCell(cellsPhysics[_childCellIdx], true);
+                    cellsPhysics[_childCellIdx].SetEnableColliderTrigger(true);
+                    cellsPhysics[_childCellIdx].ApplyDivisionForce(_toWorldPosition);
+                    cellsPhysics[_childCellIdx].StartMergeBackTimer();
+                    break;
+                }
             }
-
-            // Delay addition of new cell into main cell list through a local list.
-            _childrenCells[i] = Instantiate(cellPrefab, _cellPhysics.transform.position, Quaternion.identity, transform);
-
-            CellPhysics _childCellPhysics = _childrenCells[i].GetComponent<CellPhysics>();
-
-            _cellPhysics.IncrementChildCellsNumber();
-
-            _cellPhysics.transform.localScale = _newScale;
-            _childCellPhysics.transform.localScale = _newScale;
-
-            _childCellPhysics.parentCellPhysics = _cellPhysics;
-            _childCellPhysics.SetPlayerPhysics(this);
-            _childCellPhysics.GetComponent<CircleCollider2D>().isTrigger = true;
-            _childCellPhysics.SetCellName(_cellPhysics.GetCellName());
-            ++i;
         }
-
-        for (i = 0; i < _childrenCells.Length; ++i)
+        for (int _cellIdx = 0; _cellIdx < maxActiveCellsNumber; ++_cellIdx)
         {
-            if (_childrenCells[i] == null)
-            {
-                break;
-            }
-
-            CellPhysics _childCellPhysics = _childrenCells[i].GetComponent<CellPhysics>();
-
-            // Add to cellsPhysics list in order to achieve normal cell behaviour.
-            cellsPhysics.Add(_childCellPhysics);
-
-            _childCellPhysics.ApplyDivisionForce(_toWorldPosition);
-
-            _childCellPhysics.StartMergeBackTimer();
+            cellsPhysics[_cellIdx].canGetDividedFromInputPerspective = true;
         }
     }
 
+    [Client]
     public void MergeBackCell(CellPhysics _cellPhysics)
     {
         CellPhysics _parentCell = _cellPhysics.parentCellPhysics;
@@ -147,24 +176,63 @@ public class CellsPhysicsManager : MonoBehaviour
 
         _parentCell.transform.localScale = _newLocalScale;
 
-        // Remove from list of cells
-        cellsPhysics.Remove(_cellPhysics);
+        // Deactivate from list of cells
+        CmdSetActiveCell(_cellPhysics, false);
 
-        // Destroy child cell
-        Destroy(_cellPhysics.gameObject);
-
-        // Child destroyed, decrement parent number of childs
+        // Child deactivated, decrement parent number of children
         _parentCell.DecrementChildCellsNumber();
 
         // Allow movement for parent again
         _parentCell.stopUserInputMovement = false;
     }
 
+    #endregion
+
+
+
+    #region Commands
+
+    [Command]
+    private void CmdSetActiveCell(CellPhysics _cellPhysics, bool _isActive)
+    {
+        if (!(isServer && isClient)) // Is NOT host
+        {
+            // Necessary to avoid calling this code twice for the host. (Here and in Rpc call)
+            _cellPhysics.SetEnableCollider(_isActive);
+            _cellPhysics.SetEnableSprite(_isActive);
+            _cellPhysics.SetEnableNameRender(_isActive);
+        }
+        RpcSetActiveCell(_cellPhysics, _isActive);
+    }
+
+    #endregion
+
+
+
+    #region ClientRpcs
+
+    [ClientRpc]
+    private void RpcSetActiveCell(CellPhysics _cellPhysics, bool _isActive)
+    {
+        _cellPhysics.SetEnableCollider(_isActive);
+        _cellPhysics.SetEnableSprite(_isActive);
+        _cellPhysics.SetEnableNameRender(_isActive);
+    }
+
+    #endregion
+
+
+
+    #region Common functions
+
     public void SetCellsName(string name)
     {
-        foreach (CellPhysics _cellPhysics in cellsPhysics)
+        for (int i = 0; i < maxActiveCellsNumber; i++)
         {
-            _cellPhysics.SetCellName(name);
+            // Set cell name regardless of whether cell is active or not
+            cellsPhysics[i].SetCellName(name);
         }
     }
+
+    #endregion
 }

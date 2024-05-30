@@ -1,6 +1,7 @@
 using Mirror;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Playables;
 
@@ -13,16 +14,8 @@ public class PlayerBehaviour : NetworkBehaviour
 
     private void Awake()
     {
-        cellsPhysicsManager = null;
-        for (int i = 0; i < gameObject.transform.childCount; i++)
-        {
-            GameObject child = gameObject.transform.GetChild(i).gameObject;
-            if (child.name == "Cells")
-            {
-                cellsPhysicsManager = child.GetComponent<CellsPhysicsManager>();
-                break;
-            }
-        }
+        // Only the first component found will be returned
+        cellsPhysicsManager = GetComponentInChildren<CellsPhysicsManager>();
     }
 
     void Update()
@@ -72,8 +65,12 @@ public class PlayerBehaviour : NetworkBehaviour
     private void CmdSetupPlayer(string _name)
     {
         // Server will also have the name set in set scene before sending it to all clients including the sender
-        playerNameString = _name;
-        cellsPhysicsManager.SetCellsName(_name);
+        if (!(isServer && isClient)) // Is not host
+        {
+            // Necessary to avoid calling this code twice for the host. (Here and in Rpc call)
+            playerNameString = _name;
+            cellsPhysicsManager.SetCellsName(_name);
+        }
         RpcSetPlayerName(_name); // Update all clients with the new joined player name
 
         // Request player data to be sent to the player that just joined
