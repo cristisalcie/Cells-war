@@ -13,18 +13,24 @@ public class GameCanvasBehaviour : NetworkBehaviour
     [Header("Buttons")]
     public Button buttonExit;
 
-    // Start is called before the first frame update
+    public bool isInputPaused;
+
+    private void Awake()
+    {
+        isInputPaused = false;
+    }
+
     void Start()
     {
         buttonExit.onClick.AddListener(ButtonExit);
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            optionsPanel.SetActive(!optionsPanel.activeSelf);
+            isInputPaused = !optionsPanel.activeSelf;
+            optionsPanel.SetActive(isInputPaused);
         }
     }
 

@@ -11,16 +11,21 @@ public class PlayerBehaviour : NetworkBehaviour
     private Vector2 mouseWorldPosition;
 
     private string playerNameString;
+    private GameCanvasBehaviour gameCanvasBehaviour;
 
     private void Awake()
     {
         // Only the first component found will be returned
         cellsPhysicsManager = GetComponentInChildren<CellsPhysicsManager>();
+
+        // Since I am sure there is always going to be only one GameCanvasBehaviour in the scene.
+        gameCanvasBehaviour = FindObjectOfType<GameCanvasBehaviour>();
     }
 
     void Update()
     {
         if (!isLocalPlayer) return;
+        if (gameCanvasBehaviour.isInputPaused) return;
 
         // Handle input
         mouseWorldPosition = (Vector2)Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -34,6 +39,7 @@ public class PlayerBehaviour : NetworkBehaviour
     private void FixedUpdate()
     {
         if (!isLocalPlayer) return;
+        if (gameCanvasBehaviour.isInputPaused) return;
 
         cellsPhysicsManager.Move(mouseWorldPosition);
     }
