@@ -3,8 +3,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections;
+using TMPro;
 
-public class CanvasLobbyHUD : MonoBehaviour
+public class LobbyCanvasBehaviour : MonoBehaviour
 {
     [Header("Buttons")]
     public Button buttonHost;
@@ -19,7 +20,7 @@ public class CanvasLobbyHUD : MonoBehaviour
     public InputField inputFieldAddress;
     public InputField inputFieldPlayerName;
 
-    public Text clientText;
+    public TextMeshProUGUI clientText;
 
     private const int connectionTimeoutSeconds = 5;
 
