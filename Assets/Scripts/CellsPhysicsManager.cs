@@ -30,6 +30,14 @@ public class CellsPhysicsManager : NetworkBehaviour
         }
     }
 
+    public override void OnStartLocalPlayer()
+    {
+        /* collider.isTrigger is always going to be true for remote players connected to allow calling of OnTrigger functions set
+         * hence activate it for the local player. (First cell is always index 0 in array)
+         */
+        cellsPhysics[0].SetEnableColliderTrigger(false);
+    }
+
     protected override void OnValidate()
     {
         base.OnValidate();

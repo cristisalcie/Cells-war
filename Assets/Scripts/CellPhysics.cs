@@ -12,6 +12,8 @@ public class CellPhysics : NetworkBehaviour
     public bool stopUserInputMovement;
     public bool canGetDividedFromInputPerspective;
 
+    private const float minSizeDifferenceToGetEaten = 0.75f;
+
     private const float moveSpeedMultiplier = 25.0f;
     private const float rejectCellMoveSpeedMultiplier = 1.005f;
     private const float divisionForceMultiplier = 2000.0f;
@@ -25,6 +27,7 @@ public class CellPhysics : NetworkBehaviour
     private int childCellsNumber; // Needed to know whether this cell can be merged back into the main cell (become inactive)
     public CellsPhysicsManager cellsPhysicsManager = null;
     private bool mergeBackTimerExpired;
+    private bool unsyncedColliderIsTriggerOnPurpose;
 
     private TextMeshProUGUI playerNameTextMeshPro;
 
@@ -72,28 +75,6 @@ public class CellPhysics : NetworkBehaviour
         Debug.DrawRay(rb.position, _playerToWorldPosition, Color.red, 1); // Debug ray direction
 
         rb.AddForce(_speedFactorDistanceBased * moveSpeedMultiplier * _playerDirection);
-
-        if (circleCollider2D.isTrigger)
-        {
-            // In the situation where collider.isTrigger = true this kicks in.
-            // If needed must reject player in opposite direction.
-            if (transform.position.x < -mapBordersTransform.localScale.x / 2.0f + transform.localScale.x / 2.0f)
-            {
-                rb.AddForce(_speedFactorDistanceBased * moveSpeedMultiplier * rejectCellMoveSpeedMultiplier * Vector2.right);
-            }
-            else if (transform.position.x > mapBordersTransform.localScale.x / 2.0f - transform.localScale.x / 2.0f)
-            {
-                rb.AddForce(_speedFactorDistanceBased * moveSpeedMultiplier * rejectCellMoveSpeedMultiplier * Vector2.left);
-            }
-            if (transform.position.y < -mapBordersTransform.localScale.y / 2.0f + transform.localScale.y / 2.0f)
-            {
-                rb.AddForce(_speedFactorDistanceBased * moveSpeedMultiplier * rejectCellMoveSpeedMultiplier * Vector2.up);
-            }
-            else if (transform.position.y > mapBordersTransform.localScale.y / 2.0f - transform.localScale.y / 2.0f)
-            {
-                rb.AddForce(_speedFactorDistanceBased * moveSpeedMultiplier * rejectCellMoveSpeedMultiplier * Vector2.down);
-            }
-        }
     }
 
     [Client]
@@ -181,7 +162,7 @@ public class CellPhysics : NetworkBehaviour
 
     #region Common functions
 
-    private bool DoTransformsOverlay(Transform _firstTransform, Transform _otherTransform)
+    private bool DoTransformsOverlayEnough(Transform _firstTransform, Transform _otherTransform)
     {
         // Check whether cells overlay enough to have one assimilate the other
         return Vector3.Distance(_firstTransform.position, _otherTransform.transform.position)
@@ -220,6 +201,12 @@ public class CellPhysics : NetworkBehaviour
             && _collision.gameObject == parentCellPhysics.gameObject;
     }
 
+    private bool IsEnemyCellInCollision(Collider2D _collision)
+    {
+        return IsCellInCollision(_collision)
+            && !_collision.gameObject.GetComponent<CellPhysics>().netIdentity.isOwned;
+    }
+
     public bool IsSpriteEnabled()
     {
         return spriteRenderer.enabled;
@@ -247,12 +234,6 @@ public class CellPhysics : NetworkBehaviour
         playerNameTextMeshPro.enabled = _isEnabled;
     }
 
-    private void OnCollisionEnter2D(Collision2D _collision)
-    {
-        //Debug.Log(_collision.collider.ToString());
-
-    }
-
     private void OnCollisionStay2D(Collision2D _collision)
     {
         // Solves the case in which the cells are next to each other already and OnCollisionEnter2D() is not triggering
@@ -269,13 +250,31 @@ public class CellPhysics : NetworkBehaviour
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D _collision)
-    {
-        //Debug.Log(gameObject.name + " ontriggerEnter2d" + _collision.GetComponent<Collider2D>().ToString());
-    }
-
     private void OnTriggerStay2D(Collider2D _collision)
     {
+        if (isLocalPlayer 
+            && IsEnemyCellInCollision(_collision)
+            && DoTransformsOverlayEnough(transform, _collision.transform))
+        {
+            if (transform.localScale.x <= minSizeDifferenceToGetEaten * _collision.transform.localScale.x)
+            {
+                /* This CellPhysics's attached game object got eaten by _collision's attached game object.
+                    * This is intended since we need authority for this next part.
+                    * In other words, next part runs for the SMALLER cell call of OnTriggerStay2D.
+                    */
+                // TODO
+            }
+            else if (_collision.transform.localScale.x <= minSizeDifferenceToGetEaten * transform.localScale.x)
+            {
+                /* The _collision's attached game object got eaten by this CellPhysics's attached game object.
+                    * This is intended since we need authority for this next part.
+                    * In other words, next part runs for the BIGGER cell call of OnTriggerStay2D.
+                    */
+                // TODO
+            }
+            // else size difference between cells not big enough, do nothing
+        }
+
         if (isLocalPlayer
             && IsThisChildParentInCollision(_collision)
             && CanMergeBack())
@@ -284,7 +283,7 @@ public class CellPhysics : NetworkBehaviour
             Move(parentCellPhysics.rb.transform.position);
             parentCellPhysics.Move(rb.transform.position);
 
-            if (DoTransformsOverlay(transform, parentCellPhysics.transform))
+            if (DoTransformsOverlayEnough(transform, parentCellPhysics.transform))
             {
                 // This cell is asimilated back by the cell it divided from.
                 cellsPhysicsManager.MergeBackCell(this);
@@ -294,7 +293,7 @@ public class CellPhysics : NetworkBehaviour
 
         if (isLocalPlayer
             && IsFoodCellInCollision(_collision)
-            && DoTransformsOverlay(transform, _collision.transform))
+            && DoTransformsOverlayEnough(transform, _collision.transform))
         {
             FoodCellBehaviour _foodCellBehaviour = _collision.GetComponent<FoodCellBehaviour>();
 
@@ -312,7 +311,7 @@ public class CellPhysics : NetworkBehaviour
     {
         // Launched new divided cell and once it exited its parent cell set collider
         if (isLocalPlayer
-            && IsThisChildParentInCollision(_collision))
+        && IsThisChildParentInCollision(_collision))
         {
             if (!CanMergeBack()) // Is enough to be detected only at the start of division
             {
