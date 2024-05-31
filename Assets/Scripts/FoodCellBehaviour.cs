@@ -82,7 +82,6 @@ public class FoodCellBehaviour : NetworkBehaviour
 
     public void SetCellVisibleAndActive(bool _isVisible)
     {
-        Debug.Log("SetCellVisibleAndActive called with value " + _isVisible);
         spriteRenderer.enabled = _isVisible;
         circleCollider.enabled = _isVisible;
     }

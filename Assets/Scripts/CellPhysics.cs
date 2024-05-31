@@ -13,11 +13,13 @@ public class CellPhysics : NetworkBehaviour
     public bool canGetDividedFromInputPerspective;
 
     private const float moveSpeedMultiplier = 25.0f;
+    private const float rejectCellMoveSpeedMultiplier = 1.005f;
     private const float divisionForceMultiplier = 2000.0f;
-    private const int mergeBackTimerExpireInSeconds = 8 + 30;
+    private const int mergeBackTimerExpireInSeconds = 8;
 
     private SpriteRenderer spriteRenderer;
     private CircleCollider2D circleCollider2D;
+    private Transform mapBordersTransform;
 
     private Rigidbody2D rb;
     private int childCellsNumber; // Needed to know whether this cell can be merged back into the main cell (become inactive)
@@ -33,6 +35,7 @@ public class CellPhysics : NetworkBehaviour
         playerNameTextMeshPro = GetComponentInChildren<TextMeshProUGUI>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         circleCollider2D = GetComponent<CircleCollider2D>();
+        mapBordersTransform = GameObject.Find("Map Borders").transform;
         rb = GetComponent<Rigidbody2D>();
         parentCellPhysics = null;
         mergeBackTimerExpired = false;
@@ -69,6 +72,28 @@ public class CellPhysics : NetworkBehaviour
         Debug.DrawRay(rb.position, _playerToWorldPosition, Color.red, 1); // Debug ray direction
 
         rb.AddForce(_playerDirection * moveSpeedMultiplier * _speedFactorDistanceBased);
+
+        if (circleCollider2D.isTrigger)
+        {
+            // In the situation where collider.isTrigger = true this kicks in.
+            // If needed must reject player in opposite direction.
+            if (transform.position.x < -mapBordersTransform.localScale.x / 2.0f + transform.localScale.x / 2.0f)
+            {
+                rb.AddForce(Vector2.right * moveSpeedMultiplier * _speedFactorDistanceBased * rejectCellMoveSpeedMultiplier);
+            }
+            else if (transform.position.x > mapBordersTransform.localScale.x / 2.0f - transform.localScale.x / 2.0f)
+            {
+                rb.AddForce(Vector2.left * moveSpeedMultiplier * _speedFactorDistanceBased * rejectCellMoveSpeedMultiplier);
+            }
+            if (transform.position.y < -mapBordersTransform.localScale.y / 2.0f + transform.localScale.y / 2.0f)
+            {
+                rb.AddForce(Vector2.up * moveSpeedMultiplier * _speedFactorDistanceBased * rejectCellMoveSpeedMultiplier);
+            }
+            else if (transform.position.y > mapBordersTransform.localScale.y / 2.0f - transform.localScale.y / 2.0f)
+            {
+                rb.AddForce(Vector2.down * moveSpeedMultiplier * _speedFactorDistanceBased * rejectCellMoveSpeedMultiplier);
+            }
+        }
     }
 
     [Client]
@@ -173,7 +198,7 @@ public class CellPhysics : NetworkBehaviour
         playerNameTextMeshPro.text = _cellName;
     }
 
-    private bool HasParentCellInCollision(Collider2D _collision)
+    private bool HasParentCellInCollision()
     {
         return parentCellPhysics != null;
     }
@@ -190,7 +215,9 @@ public class CellPhysics : NetworkBehaviour
 
     private bool IsThisChildParentInCollision(Collider2D _collision)
     {
-        return _collision.gameObject == parentCellPhysics.gameObject;
+        return IsCellInCollision(_collision)
+            && HasParentCellInCollision()
+            && _collision.gameObject == parentCellPhysics.gameObject;
     }
 
     public bool IsSpriteEnabled()
@@ -210,6 +237,8 @@ public class CellPhysics : NetworkBehaviour
 
     public void SetEnableColliderTrigger(bool _isEnabled)
     {
+        // Rigidbody automatic mass is used in order to maintain the cell mass while collider is trigger.
+        rb.useAutoMass = !_isEnabled;
         circleCollider2D.isTrigger = _isEnabled;
     }
 
@@ -228,17 +257,12 @@ public class CellPhysics : NetworkBehaviour
     {
         // Solves the case in which the cells are next to each other already and OnCollisionEnter2D() is not triggering
         if (isLocalPlayer
-            && IsCellInCollision(_collision.collider)
-            && HasParentCellInCollision(_collision.collider)
             && IsThisChildParentInCollision(_collision.collider)
             && CanMergeBack())
         {
             // Stop user input for both child and parent
             stopUserInputMovement = true;
             parentCellPhysics.stopUserInputMovement = true;
-
-            // Disable rigidbody automatic mass in order to maintain the cell mass while collider is trigger.
-            rb.useAutoMass = false;
 
             // Set trigger for child in order to allow overlap
             SetEnableColliderTrigger(true);
@@ -253,8 +277,6 @@ public class CellPhysics : NetworkBehaviour
     private void OnTriggerStay2D(Collider2D _collision)
     {
         if (isLocalPlayer
-            && IsCellInCollision(_collision)
-            && HasParentCellInCollision(_collision)
             && IsThisChildParentInCollision(_collision)
             && CanMergeBack())
         {
@@ -266,7 +288,7 @@ public class CellPhysics : NetworkBehaviour
             {
                 // This cell is asimilated back by the cell it divided from.
                 cellsPhysicsManager.MergeBackCell(this);
-                mergeBackTimerExpired = false;
+                mergeBackTimerExpired = false; // CanMergeBack() will return false after this assignment
             }
         }
 
@@ -290,25 +312,9 @@ public class CellPhysics : NetworkBehaviour
     {
         // Launched new divided cell and once it exited its parent cell set collider
         if (isLocalPlayer
-            && IsCellInCollision(_collision)
-            && HasParentCellInCollision(_collision)
             && IsThisChildParentInCollision(_collision))
         {
-            if (CanMergeBack())
-            {
-                // Because of external forces caused by merging of other 2 cells, this function is called before merging was completed
-
-                // Resume user input for both child and parent
-                stopUserInputMovement = false;
-                parentCellPhysics.stopUserInputMovement = false;
-
-                // Enable back rigidbody automatic mass.
-                rb.useAutoMass = true;
-
-                // Disable trigger for child in order to allow collisions
-                SetEnableColliderTrigger(false);
-            }
-            else /* Is enough to be detected only at the start of division */
+            if (!CanMergeBack()) // Is enough to be detected only at the start of division
             {
                 // Note: Rigidbody automatic mass will calculate mass to 1 while trigger is true
                 SetEnableColliderTrigger(false);

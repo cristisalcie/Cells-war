@@ -167,23 +167,27 @@ public class CellsPhysicsManager : NetworkBehaviour
     [Client]
     public void MergeBackCell(CellPhysics _cellPhysics)
     {
-        CellPhysics _parentCell = _cellPhysics.parentCellPhysics;
+        CellPhysics _parentCellPhysics = _cellPhysics.parentCellPhysics;
 
         // Calculate new scale for parent cell
         Vector3 _newLocalScale = new Vector3(_cellPhysics.transform.localScale.x, _cellPhysics.transform.localScale.y, _cellPhysics.transform.localScale.z);
 
-        _newLocalScale += _parentCell.transform.localScale;
+        _newLocalScale += _parentCellPhysics.transform.localScale;
 
-        _parentCell.transform.localScale = _newLocalScale;
+        _parentCellPhysics.transform.localScale = _newLocalScale;
 
-        // Deactivate from list of cells
+        // Mark child cell as inactive
         CmdSetActiveCell(_cellPhysics, false);
 
         // Child deactivated, decrement parent number of children
-        _parentCell.DecrementChildCellsNumber();
+        _parentCellPhysics.DecrementChildCellsNumber();
 
-        // Allow movement for parent again
-        _parentCell.stopUserInputMovement = false;
+        // Resume user input for both parent and child
+        _parentCellPhysics.stopUserInputMovement = false;
+        _cellPhysics.stopUserInputMovement = false;
+
+        // Disable trigger for child (is default state for inactive cell, will allow rigidbody automatic mass work)
+        _cellPhysics.SetEnableColliderTrigger(false);
     }
 
     #endregion
