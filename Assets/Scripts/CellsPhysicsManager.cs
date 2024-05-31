@@ -158,6 +158,12 @@ public class CellsPhysicsManager : NetworkBehaviour
                     cellsPhysics[_childCellIdx].transform.localScale = _newScale;
                     cellsPhysics[_childCellIdx].transform.position = cellsPhysics[_parentCellIdx].transform.position;
                     cellsPhysics[_childCellIdx].parentCellPhysics = cellsPhysics[_parentCellIdx];
+                    cellsPhysics[_childCellIdx].isCellBeingEaten = false;
+                    cellsPhysics[_childCellIdx].mergeBackTimerExpired = false;
+                    cellsPhysics[_childCellIdx].ResetChildCellsNumber();
+                    cellsPhysics[_childCellIdx].SetEnableCollider(true);
+                    cellsPhysics[_childCellIdx].SetEnableSprite(true);
+                    cellsPhysics[_childCellIdx].SetEnableNameRender(true);
                     CmdSetActiveCell(cellsPhysics[_childCellIdx], true);
                     cellsPhysics[_childCellIdx].SetEnableColliderTrigger(true);
                     cellsPhysics[_childCellIdx].ApplyDivisionForce(_toWorldPosition);
@@ -185,6 +191,9 @@ public class CellsPhysicsManager : NetworkBehaviour
         _parentCellPhysics.transform.localScale = _newLocalScale;
 
         // Mark child cell as inactive
+        _cellPhysics.SetEnableCollider(false);
+        _cellPhysics.SetEnableSprite(false);
+        _cellPhysics.SetEnableNameRender(false);
         CmdSetActiveCell(_cellPhysics, false);
 
         // Child deactivated, decrement parent number of children
@@ -198,11 +207,122 @@ public class CellsPhysicsManager : NetworkBehaviour
         _cellPhysics.SetEnableColliderTrigger(false);
     }
 
+    [Client]
+    private void DoTryOrfanChildCellsOfCell(CellPhysics _cellphysics)
+    {
+        CellPhysics _chooseNewParentCell = null;
+        for (int _childIdx = 0; _childIdx < maxActiveCellsNumber; _childIdx++)
+        {
+            if (_cellphysics == cellsPhysics[_childIdx].parentCellPhysics)
+            {
+                // Try to orfan the child. However, if the parent cell had a parent, he will not be an orfan.
+                cellsPhysics[_childIdx].parentCellPhysics = _cellphysics.parentCellPhysics;
+
+                if (cellsPhysics[_childIdx].parentCellPhysics == null)
+                {
+                    if (_chooseNewParentCell == null)
+                    {
+                        // This child now has no parent, hence his mergeBackTimerExpired must be false
+                        cellsPhysics[_childIdx].mergeBackTimerExpired = false;
+                        _chooseNewParentCell = cellsPhysics[_childIdx];
+                    }
+                    else
+                    {
+                        // Another cell that remained without parent, can't have this situation so set new unrelated parent
+                        cellsPhysics[_childIdx].parentCellPhysics = _chooseNewParentCell;
+                        _chooseNewParentCell.IncrementChildCellsNumber();
+                        Debug.Log("Caught the bug!");
+                    }
+                }
+                else
+                {
+                    // Announce grandparent that he has a new child.
+                    cellsPhysics[_childIdx].parentCellPhysics.IncrementChildCellsNumber();
+
+                    // Delete the found child from parent since he left it (at the end he should have 0)
+                    _cellphysics.DecrementChildCellsNumber();
+                }
+            }
+        }
+    }
+
+    [Client]
+    public IEnumerator HaveCellEaten(CellPhysics _cellPhysics, CellPhysics _eaterCellPhysics)
+    {
+        CmdSetCellLocalScale(_cellPhysics.transform.localScale * 0.5f, _eaterCellPhysics);
+        yield return null; // Wait a frame
+
+        CellPhysics _parentCellPhysics = _cellPhysics.parentCellPhysics;
+
+        int _activeCells = 0;
+
+        for (int i = 0; i < maxActiveCellsNumber; ++i)
+        {
+            if (cellsPhysics[i].IsSpriteEnabled())
+            {
+                ++_activeCells;
+            }
+            if (_activeCells > 1)
+            {
+                // There are at least two cells active, player can still play
+                break;
+            }
+        }
+
+        if (_activeCells < 2)
+        {
+            yield return new WaitForSeconds(0.25f); // Should be enough to make sure CmdSetCellLocalScale() ended it's execution
+            // Player should return to lobby, he has no cells left.
+            if (isClient && isServer) // Is host
+            {
+                GameNetworkManager.singleton.StopHost();
+            }
+            if (isServer)
+            {
+                if (isClient)
+                {
+                    GameNetworkManager.singleton.StopHost();
+                }
+                GameNetworkManager.singleton.StopServer();
+            }
+            else
+            {
+                GameNetworkManager.singleton.StopClient();
+            }
+        }
+        else
+        {
+            // Mark child cell as inactive
+            _cellPhysics.SetEnableCollider(false);
+            _cellPhysics.SetEnableSprite(false);
+            _cellPhysics.SetEnableNameRender(false);
+            CmdSetActiveCell(_cellPhysics, false);
+
+            DoTryOrfanChildCellsOfCell(_cellPhysics);
+            if (_parentCellPhysics != null)
+            {
+                // Let parent know his child is gone (already knows he has grandchildren as chilldren from DoTryOrfanChildCellsOfCell function call
+                _parentCellPhysics.DecrementChildCellsNumber();
+                _cellPhysics.parentCellPhysics = null;
+            }
+
+            // Disable isTrigger for child (is default state for inactive cell, will allow rigidbody automatic mass work)
+            _cellPhysics.SetEnableColliderTrigger(false);
+        }
+    }
+
     #endregion
 
 
 
     #region Commands
+
+    [Command]
+    private void CmdSetCellLocalScale(Vector3 _eatenLocalScale, CellPhysics _eaterCellPhysics)
+    {
+        // Make target rpc run directly on the eater cell client where he has authority to change his localScale.
+        TargetSetCellLocalScale(_eaterCellPhysics.netIdentity.connectionToClient, _eatenLocalScale, _eaterCellPhysics);
+    }
 
     [Command]
     private void CmdSetActiveCell(CellPhysics _cellPhysics, bool _isActive)
@@ -221,9 +341,21 @@ public class CellsPhysicsManager : NetworkBehaviour
 
 
 
+    #region TargetRpcs
+
+    [TargetRpc]
+    private void TargetSetCellLocalScale(NetworkConnectionToClient _target, Vector3 _eatenLocalScale, CellPhysics _eaterCellPhysics)
+    {
+        _eaterCellPhysics.transform.localScale += (_eatenLocalScale * CellPhysics.minSizeDifferenceToGetEaten);
+    }
+
+    #endregion
+
+
+
     #region ClientRpcs
 
-    [ClientRpc]
+    [ClientRpc(includeOwner = false)] // Avoid delay by calling body on owner, before calling from owner the command to send RPC and eventually call body
     private void RpcSetActiveCell(CellPhysics _cellPhysics, bool _isActive)
     {
         _cellPhysics.SetEnableCollider(_isActive);

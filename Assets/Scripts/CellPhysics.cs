@@ -12,22 +12,20 @@ public class CellPhysics : NetworkBehaviour
     public bool stopUserInputMovement;
     public bool canGetDividedFromInputPerspective;
 
-    private const float minSizeDifferenceToGetEaten = 0.75f;
+    public const float minSizeDifferenceToGetEaten = 0.75f;
 
     private const float moveSpeedMultiplier = 25.0f;
-    private const float rejectCellMoveSpeedMultiplier = 1.005f;
     private const float divisionForceMultiplier = 2000.0f;
-    private const int mergeBackTimerExpireInSeconds = 8;
+    private const int mergeBackTimerExpireInSeconds = 8 + 20;
 
     private SpriteRenderer spriteRenderer;
     private CircleCollider2D circleCollider2D;
-    private Transform mapBordersTransform;
 
     private Rigidbody2D rb;
     private int childCellsNumber; // Needed to know whether this cell can be merged back into the main cell (become inactive)
     public CellsPhysicsManager cellsPhysicsManager = null;
-    private bool mergeBackTimerExpired;
-    private bool unsyncedColliderIsTriggerOnPurpose;
+    public bool mergeBackTimerExpired;
+    public bool isCellBeingEaten; // Avoid getting eaten twice (it is not normal)
 
     private TextMeshProUGUI playerNameTextMeshPro;
 
@@ -38,10 +36,10 @@ public class CellPhysics : NetworkBehaviour
         playerNameTextMeshPro = GetComponentInChildren<TextMeshProUGUI>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         circleCollider2D = GetComponent<CircleCollider2D>();
-        mapBordersTransform = GameObject.Find("Map Borders").transform;
         rb = GetComponent<Rigidbody2D>();
         parentCellPhysics = null;
         mergeBackTimerExpired = false;
+        isCellBeingEaten = false;
         childCellsNumber = 0;
         stopUserInputMovement = false;
         if (cellsPhysicsManager == null)
@@ -83,6 +81,7 @@ public class CellPhysics : NetworkBehaviour
         Vector2 _playerToWorldPosition = _toWorldPosition - rb.position;
         Vector2 _playerDirection = _playerToWorldPosition.normalized;
 
+        rb.mass = 1; // in order to get same boost
         rb.AddForce(_playerDirection * divisionForceMultiplier);
     }
 
@@ -109,6 +108,12 @@ public class CellPhysics : NetworkBehaviour
     public void IncrementChildCellsNumber()
     {
         ++childCellsNumber;
+    }
+
+    [Client]
+    public void ResetChildCellsNumber()
+    {
+        childCellsNumber = 0;
     }
 
     [Client]
@@ -181,7 +186,18 @@ public class CellPhysics : NetworkBehaviour
 
     private bool HasParentCellInCollision()
     {
-        return parentCellPhysics != null;
+        if (parentCellPhysics == null)
+        {
+            return false;
+        }
+        else if (parentCellPhysics.IsSpriteEnabled())
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     private bool IsCellInCollision(Collider2D _collision)
@@ -262,15 +278,11 @@ public class CellPhysics : NetworkBehaviour
                     * This is intended since we need authority for this next part.
                     * In other words, next part runs for the SMALLER cell call of OnTriggerStay2D.
                     */
-                // TODO
-            }
-            else if (_collision.transform.localScale.x <= minSizeDifferenceToGetEaten * transform.localScale.x)
-            {
-                /* The _collision's attached game object got eaten by this CellPhysics's attached game object.
-                    * This is intended since we need authority for this next part.
-                    * In other words, next part runs for the BIGGER cell call of OnTriggerStay2D.
-                    */
-                // TODO
+                if (!isCellBeingEaten)
+                {
+                    cellsPhysicsManager.StartCoroutine(cellsPhysicsManager.HaveCellEaten(this, _collision.gameObject.GetComponent<CellPhysics>()));
+                    isCellBeingEaten = true;
+                }
             }
             // else size difference between cells not big enough, do nothing
         }

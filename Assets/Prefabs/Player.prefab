@@ -304,6 +304,8 @@ MonoBehaviour:
   stopUserInputMovement: 0
   canGetDividedFromInputPerspective: 0
   cellsPhysicsManager: {fileID: 5952565617756846694}
+  mergeBackTimerExpired: 0
+  isCellBeingEaten: 0
 --- !u!114 &498612558521743608
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -760,7 +762,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3860163125269643755}
@@ -899,6 +901,8 @@ MonoBehaviour:
   stopUserInputMovement: 0
   canGetDividedFromInputPerspective: 0
   cellsPhysicsManager: {fileID: 5952565617756846694}
+  mergeBackTimerExpired: 0
+  isCellBeingEaten: 0
 --- !u!114 &3613430563839299184
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1237,6 +1241,8 @@ MonoBehaviour:
   stopUserInputMovement: 0
   canGetDividedFromInputPerspective: 0
   cellsPhysicsManager: {fileID: 5952565617756846694}
+  mergeBackTimerExpired: 0
+  isCellBeingEaten: 0
 --- !u!114 &8082526677195689052
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1575,6 +1581,8 @@ MonoBehaviour:
   stopUserInputMovement: 0
   canGetDividedFromInputPerspective: 0
   cellsPhysicsManager: {fileID: 5952565617756846694}
+  mergeBackTimerExpired: 0
+  isCellBeingEaten: 0
 --- !u!114 &3271807429382957817
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2117,6 +2125,8 @@ MonoBehaviour:
   stopUserInputMovement: 0
   canGetDividedFromInputPerspective: 0
   cellsPhysicsManager: {fileID: 5952565617756846694}
+  mergeBackTimerExpired: 0
+  isCellBeingEaten: 0
 --- !u!114 &7041111726466096570
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2423,6 +2433,8 @@ MonoBehaviour:
   stopUserInputMovement: 0
   canGetDividedFromInputPerspective: 0
   cellsPhysicsManager: {fileID: 5952565617756846694}
+  mergeBackTimerExpired: 0
+  isCellBeingEaten: 0
 --- !u!114 &1848804920449948296
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2729,6 +2741,8 @@ MonoBehaviour:
   stopUserInputMovement: 0
   canGetDividedFromInputPerspective: 0
   cellsPhysicsManager: {fileID: 5952565617756846694}
+  mergeBackTimerExpired: 0
+  isCellBeingEaten: 0
 --- !u!114 &7394968552089347386
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3035,6 +3049,8 @@ MonoBehaviour:
   stopUserInputMovement: 0
   canGetDividedFromInputPerspective: 0
   cellsPhysicsManager: {fileID: 5952565617756846694}
+  mergeBackTimerExpired: 0
+  isCellBeingEaten: 0
 --- !u!114 &9202528017970902139
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3443,6 +3459,8 @@ MonoBehaviour:
   stopUserInputMovement: 0
   canGetDividedFromInputPerspective: 0
   cellsPhysicsManager: {fileID: 5952565617756846694}
+  mergeBackTimerExpired: 0
+  isCellBeingEaten: 0
 --- !u!114 &1560309715413923484
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4355,6 +4373,8 @@ MonoBehaviour:
   stopUserInputMovement: 0
   canGetDividedFromInputPerspective: 0
   cellsPhysicsManager: {fileID: 5952565617756846694}
+  mergeBackTimerExpired: 0
+  isCellBeingEaten: 0
 --- !u!114 &5955143922767796486
 MonoBehaviour:
   m_ObjectHideFlags: 0
