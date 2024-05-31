@@ -4,8 +4,7 @@
 TagManager:
   serializedVersion: 2
   tags:
-  - LocalCell
-  - RemoteCell
+  - Cell
   - FoodCell
   layers:
   - Default

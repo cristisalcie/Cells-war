@@ -1,65 +1,40 @@
+using Mirror;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
-public class FoodCellBehaviour : MonoBehaviour
+public class FoodCellBehaviour : NetworkBehaviour
 {
-    private const int respawnInSeconds = 5;
+    public const int respawnInSeconds = 5;
     private const float scaleIncreaseMultiplier = 0.02f;
     private Transform mapBordersTransform;
     private SpriteRenderer spriteRenderer;
     private CircleCollider2D circleCollider;
 
+    // Used to make sure code inside CellPhysics.cs, function OnTriggerStay2D for the client
+    // with authority over that object is not ran twice
+    public bool isRespawning;
+
     private void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
         circleCollider = GetComponent<CircleCollider2D>();
-
-        FindMapBordersTransform();
-        Spawn();
+        isRespawning = false;
     }
 
-    private void FindMapBordersTransform()
+
+
+    #region Functions that run only on SERVER instance
+
+    [Server]
+    public void FindMapBordersTransform()
     {
         mapBordersTransform = GameObject.Find("Map Borders").transform;
     }
 
-    private bool IsFoodCellAbsorbedByCellTransform(Transform _otherCell)
-    {
-        // Check whether cells overlay enough to have one assimilate the other
-        return Vector3.Distance(transform.position, _otherCell.transform.position)
-            < Mathf.Max(transform.localScale.x / 2, _otherCell.transform.localScale.x / 2);
-    }
-
-    private bool IsLocalCellInCollision(Collider2D _collision)
-    {
-        return _collision.CompareTag("LocalCell");
-    }
-
-    private IEnumerator WaitToRespawn()
-    {
-        yield return new WaitForSeconds(respawnInSeconds);
-        Spawn();
-    }
-
-    private void KillFoodCell()
-    {
-        spriteRenderer.enabled = false;
-        circleCollider.enabled = false;
-    }
-
-    private void Spawn()
-    {
-        // Set random position on map
-        CalculatePosition();
-
-        // Set cell alive
-        spriteRenderer.enabled = true;
-        circleCollider.enabled = true;
-    }
-
-    private void CalculatePosition()
+    [Server]
+    public void CalculatePosition()
     {
         float _newPositionX = Random.Range
             (
@@ -75,26 +50,47 @@ public class FoodCellBehaviour : MonoBehaviour
         transform.position = new Vector3(_newPositionX, _newPositionY, 0);
     }
 
-    private void OnTriggerStay2D(Collider2D _collision)
+    [Server]
+    public void KillFoodCell()
     {
-        if (IsLocalCellInCollision(_collision)
-            && IsFoodCellAbsorbedByCellTransform(_collision.transform))
+        if (!(isServer & isClient)) // Is not host
         {
-            // Calculate new scale for the eater cell
-            Vector3 _newLocalScale = new Vector3(
-                _collision.transform.localScale.x,
-                _collision.transform.localScale.y,
-                _collision.transform.localScale.z);
-
-            _newLocalScale += (transform.localScale * scaleIncreaseMultiplier);
-
-            _collision.transform.localScale = _newLocalScale;
-
-            // Kill this food cell
-            KillFoodCell();
-
-            // Start timer to respawn
-            StartCoroutine(WaitToRespawn());
+            // Necessary to avoid calling SetCellVisibleAndActive function twice for the host (Here and in Rpc call).
+            SetCellVisibleAndActive(false);
         }
+        RpcSetCellVisibleAndActive(false);
     }
+
+
+    #endregion
+
+
+
+    #region ClientRpcs
+
+    [ClientRpc]
+    public void RpcSetCellVisibleAndActive(bool _isVisible)
+    {
+        SetCellVisibleAndActive(_isVisible);
+    }
+
+    #endregion
+
+
+
+    #region Common functions
+
+    public void SetCellVisibleAndActive(bool _isVisible)
+    {
+        spriteRenderer.enabled = _isVisible;
+        circleCollider.enabled = _isVisible;
+    }
+
+
+    public Vector3 GetLocalScaleWithMultiplier()
+    {
+        return transform.localScale * scaleIncreaseMultiplier;
+    }
+
+    #endregion
 }
