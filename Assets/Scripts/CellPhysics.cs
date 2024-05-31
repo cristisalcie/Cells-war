@@ -71,7 +71,7 @@ public class CellPhysics : NetworkBehaviour
 
         Debug.DrawRay(rb.position, _playerToWorldPosition, Color.red, 1); // Debug ray direction
 
-        rb.AddForce(_playerDirection * moveSpeedMultiplier * _speedFactorDistanceBased);
+        rb.AddForce(_speedFactorDistanceBased * moveSpeedMultiplier * _playerDirection);
 
         if (circleCollider2D.isTrigger)
         {
@@ -79,19 +79,19 @@ public class CellPhysics : NetworkBehaviour
             // If needed must reject player in opposite direction.
             if (transform.position.x < -mapBordersTransform.localScale.x / 2.0f + transform.localScale.x / 2.0f)
             {
-                rb.AddForce(Vector2.right * moveSpeedMultiplier * _speedFactorDistanceBased * rejectCellMoveSpeedMultiplier);
+                rb.AddForce(_speedFactorDistanceBased * moveSpeedMultiplier * rejectCellMoveSpeedMultiplier * Vector2.right);
             }
             else if (transform.position.x > mapBordersTransform.localScale.x / 2.0f - transform.localScale.x / 2.0f)
             {
-                rb.AddForce(Vector2.left * moveSpeedMultiplier * _speedFactorDistanceBased * rejectCellMoveSpeedMultiplier);
+                rb.AddForce(_speedFactorDistanceBased * moveSpeedMultiplier * rejectCellMoveSpeedMultiplier * Vector2.left);
             }
             if (transform.position.y < -mapBordersTransform.localScale.y / 2.0f + transform.localScale.y / 2.0f)
             {
-                rb.AddForce(Vector2.up * moveSpeedMultiplier * _speedFactorDistanceBased * rejectCellMoveSpeedMultiplier);
+                rb.AddForce(_speedFactorDistanceBased * moveSpeedMultiplier * rejectCellMoveSpeedMultiplier * Vector2.up);
             }
             else if (transform.position.y > mapBordersTransform.localScale.y / 2.0f - transform.localScale.y / 2.0f)
             {
-                rb.AddForce(Vector2.down * moveSpeedMultiplier * _speedFactorDistanceBased * rejectCellMoveSpeedMultiplier);
+                rb.AddForce(_speedFactorDistanceBased * moveSpeedMultiplier * rejectCellMoveSpeedMultiplier * Vector2.down);
             }
         }
     }
