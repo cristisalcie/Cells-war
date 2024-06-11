@@ -166,7 +166,13 @@ public class GameNetworkManager : NetworkManager
 
         if (sceneName == "Assets/Scenes/GameScene.unity")
         {
+            if (mapBordersTransform ==  null)
+            {
+                FindMapBordersTransform();
+            }
             SpawnFoodCells();
+            // Will change for host as well, but that mode is only for developers.
+            Camera.main.orthographicSize = mapBordersTransform.localScale.x / 2; // In order to view entire map
         }
     }
 
