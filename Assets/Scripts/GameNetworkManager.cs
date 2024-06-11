@@ -47,7 +47,6 @@ public class GameNetworkManager : NetworkManager
 
     public GameObject foodCellPrefab;
     private const int maxNumberOfFoodCells = 500;
-    //private const int maxNumberOfFoodCells = 1;
 
     // Overrides the base singleton so we don't have to cast to this type everywhere.
     public static new GameNetworkManager singleton => (GameNetworkManager)NetworkManager.singleton;

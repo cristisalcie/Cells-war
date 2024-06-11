@@ -7,9 +7,9 @@ using UnityEngine;
 public class CellsPhysicsManager : NetworkBehaviour
 {
     // This is max number of divided cells including the starting cell
-    private const int maxActiveCellsNumber = 10;
+    public const int maxActiveCellsNumber = 10;
 
-    private readonly CellPhysics[] cellsPhysics = new CellPhysics[maxActiveCellsNumber]; 
+    public readonly CellPhysics[] cellsPhysics = new CellPhysics[maxActiveCellsNumber]; 
     private const float cameraZoomMultiplier = 0.65f;
     private const float minSizeMultiplier = 0.5f;
     private const float stepSizeMultiplier = 10; // how quick can we reach the minSizeMultiplier
@@ -249,7 +249,7 @@ public class CellsPhysicsManager : NetworkBehaviour
     [Client]
     public IEnumerator HaveCellEaten(CellPhysics _cellPhysics, CellPhysics _eaterCellPhysics)
     {
-        CmdSetCellLocalScale(_cellPhysics.transform.localScale * 0.5f, _eaterCellPhysics);
+        CmdSetCellLocalScale(_cellPhysics.transform.localScale * CellPhysics.localScaleGotEatenMultiplier, _eaterCellPhysics);
         yield return null; // Wait a frame
 
         CellPhysics _parentCellPhysics = _cellPhysics.parentCellPhysics;

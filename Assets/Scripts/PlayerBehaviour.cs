@@ -92,6 +92,19 @@ public class PlayerBehaviour : NetworkBehaviour
             // First parameter is sent to know which playerBehaviour to modify and second parameter is the value that needs to be set of the above
             // playerBehaviour script because the player who just joined doesn't know it but the server (where this Command is running), knows it.
             TargetSetPlayerName(_playerBehaviour, _playerBehaviour.playerNameString);
+
+            // Goes back to owner of playerBehaviour.cellsPhysicsManager.cellsPhysics[i] script (the player who just joined) and sets data of
+            // _playerBehaviour.cellsPhysicsManager.cellsPhysics[i] (existing players cells).
+            // First parameter is sent to know which playerBehaviour.cellsPhysicsManager.cellsPhysics[i] to modify and second parameter is the value
+            // that needs to be set of the above playerBehaviour.cellsPhysicsManager.cellsPhysics[i] script because the player who just joined
+            // doesn't know it but the server (where this Command is running), knows it.
+            for (int i = 0; i < CellsPhysicsManager.maxActiveCellsNumber; i++)
+            {
+                TargetSetCellData(_playerBehaviour.cellsPhysicsManager.cellsPhysics[i],
+                    _playerBehaviour.cellsPhysicsManager.cellsPhysics[i].IsColliderEnabled(),
+                    _playerBehaviour.cellsPhysicsManager.cellsPhysics[i].IsSpriteEnabled(),
+                    _playerBehaviour.cellsPhysicsManager.cellsPhysics[i].IsNameRenderEnabled());
+            }
         }
     }
 
@@ -126,6 +139,16 @@ public class PlayerBehaviour : NetworkBehaviour
         _target.cellsPhysicsManager.SetCellsName(_playerNameString);
     }
 
+    /// <summary> Used on CmdSetupPlayer() in PlayerScript to gather existing modified data of all joined players </summary>
+    /// <param name="_target"> The GameObject identity to be modified (will have the values of the local scene, not the ones sent from server) </param>
+    /// <param name="_playerNameString"> The string of playerNameString that needs to be changed to in _target gameobject </param>
+    [TargetRpc]
+    private void TargetSetCellData(CellPhysics _target, bool _colliderEnabled, bool _spriteEnabled, bool _nameRenderEnabled)
+    {
+        _target.SetEnableCollider(_colliderEnabled);
+        _target.SetEnableSprite(_spriteEnabled);
+        _target.SetEnableNameRender(_nameRenderEnabled);
+    }
     #endregion
 
 }

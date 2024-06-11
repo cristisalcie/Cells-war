@@ -13,6 +13,7 @@ public class CellPhysics : NetworkBehaviour
     public bool canGetDividedFromInputPerspective;
 
     public const float minSizeDifferenceToGetEaten = 0.75f;
+    public const float localScaleGotEatenMultiplier = 0.35f;
 
     private const float moveSpeedMultiplier = 25.0f;
     private const float divisionForceMultiplier = 2000.0f;
@@ -226,6 +227,16 @@ public class CellPhysics : NetworkBehaviour
     public bool IsSpriteEnabled()
     {
         return spriteRenderer.enabled;
+    }
+
+    public bool IsColliderEnabled()
+    {
+        return circleCollider2D.enabled;
+    }
+
+    public bool IsNameRenderEnabled()
+    {
+        return playerNameTextMeshPro.enabled;
     }
 
     public void SetEnableSprite(bool _isEnabled)
