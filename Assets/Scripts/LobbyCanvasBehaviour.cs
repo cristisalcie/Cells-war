@@ -52,7 +52,7 @@ public class LobbyCanvasBehaviour : MonoBehaviour
     // Invoked when the value of the text field changes.
     public void PlayerNameChangeCheck()
     {
-        ((GameNetworkManager)GameNetworkManager.singleton).localPlayerName = inputFieldPlayerName.text;
+        GameNetworkManager.singleton.localPlayerName = inputFieldPlayerName.text;
     }
 
     public void ButtonHost()
