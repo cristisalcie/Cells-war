@@ -59,9 +59,25 @@ public class CellPhysics : NetworkBehaviour
         }
     }
 
-
+    public override void OnStartServer()
+    {
+        base.OnStartServer();
+        if (!isLocalPlayer && !(isClient && isServer) /* Is not host */)
+        {
+            Destroy(rb);
+        }
+    }
 
     #region Functions called only on CLIENT instance
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        if (!isLocalPlayer)
+        {
+            Destroy(rb);
+        }
+    }
 
     [Client]
     public void Move(Vector2 _toWorldPosition)
